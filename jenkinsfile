@@ -1,0 +1,99 @@
+pipeline {
+    agent  {
+        node {
+            label 'linux'
+            // Can be a relative path or an absolute path
+
+        }
+    }
+    parameters {
+        choice(
+            name: 'task', 
+            choices: ['plan', 'apply', 'destroy'], 
+            description: 'Select the choice'
+        )
+    }
+    options {
+        timeout(time: 1, unit: 'HOURS') // Aborts the build if it takes longer than 1 hour
+        buildDiscarder(logRotator(numToKeepStr: '10')) // Only retains the last 10 builds
+        timestamps() // Adds timestamps to the console output log
+    }
+    stages {
+        stage('Test Secrets') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
+                                  credentialsId: '348316cd-9b3b-4942-9c4f-a6356d1d1732',
+                                  accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                                  secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                    sh 'aws s3 ls'
+                }
+            }
+        }
+
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/kailashkashyap/terraform.git',
+                    credentialsId: '73b8ff74-bbb0-4fca-bfd6-c63f65752ce8'
+                    sh 'pwd'
+            }
+        }
+
+        stage('Terraform init') {
+            steps {
+                 dir('Network') {
+                        sh 'ls -ltra'
+                        sh 'terraform init'
+                 }
+            }
+        }
+        stage('Terraform Validate') {
+            steps {
+                dir('Network'){
+                sh 'terraform validate'
+            }
+            }
+        }
+        
+
+        stage('Terraform Plan') {
+        when {
+                expression { params.task == 'plan' }
+            }
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
+                      credentialsId: '348316cd-9b3b-4942-9c4f-a6356d1d1732',
+                      accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                      secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                    dir('Network'){
+                    sh 'terraform plan -out=tfplan'
+                    }
+                 }
+             }
+        }
+
+
+        stage('Terraform Apply') {
+        when {
+                expression { params.task == 'apply' }
+            }
+            steps {
+                input message: "Approve deployment?"
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
+                credentialsId: '348316cd-9b3b-4942-9c4f-a6356d1d1732',
+                accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) 
+                    {
+                        dir('Network'){
+                        sh 'terraform apply -auto-approve tfplan'
+                    }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            archiveArtifacts artifacts: '**/*.tfstate', fingerprint: true
+        }
+    }
+}
