@@ -10,6 +10,7 @@ phases:
   pre_build:
     commands:
       - echo "Checking source files..."
+      - pwd
       - ls -la
 
       
