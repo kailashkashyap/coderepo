@@ -22,7 +22,7 @@ phases:
   post_build:
     commands:
       - echo "Restarting Apache to apply changes..."
-      - service httpd restart
+      - systemctl restart httpd
       - echo "Deployment completed successfully on $(date)"
 
 artifacts:
