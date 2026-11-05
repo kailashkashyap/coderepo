@@ -1,0 +1,30 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo "Installing Apache HTTPD..."
+      - apt-get update -y
+      - apt-get install -y apache2
+  
+  pre_build:
+    commands:
+      - echo "Checking source files..."
+      - ls -la
+      
+  build:
+    commands:
+      - echo "Deploying index.html to Apache root directory..."
+      - cp index.html /var/www/html/
+      # Optional: Copy all static assets if you have css/js folders
+      # - cp -R . /var/www/html/
+
+  post_build:
+    commands:
+      - echo "Restarting Apache to apply changes..."
+      - service apache2 restart
+      - echo "Deployment completed successfully on $(date)"
+
+artifacts:
+  files:
+    - '/var/www/html/**/*'
