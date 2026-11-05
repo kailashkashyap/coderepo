@@ -4,8 +4,8 @@ phases:
   install:
     commands:
       - echo "Installing Apache HTTPD..."
-      - apt-get update -y
-      - apt-get install -y apache2
+      - yum update -y
+      - yum install -y apache2
   
   pre_build:
     commands:
