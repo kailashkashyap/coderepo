@@ -14,10 +14,7 @@ permissions:
       - file
 file_exists_behavior: OVERWRITE
 hooks:
-  AfterInstall:
-    - location: /scripts/after_install.sh
-      timeout: 60
-      runas: root
+
   ApplicationStart:
     - location: /scripts/start_httpd.sh
       timeout: 60
